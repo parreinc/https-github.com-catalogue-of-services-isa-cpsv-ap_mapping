@@ -1,0 +1,478 @@
+<?php
+
+
+function CPSVAPmapping_menu() {
+
+	$items['CPSVAPmappings'] = array(
+		'title' => 'CPSVAPmapping',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('CPSVAPmapping_basic'),
+		'access callback' => TRUE,
+	);
+	
+	return $items;
+}
+
+function CPSVAPmapping_basic($form, &$form_state) {
+	
+	$datamodel_list= CPSVAPmapping_basic_populate_list();
+	$dropdown_array= CPSVAPmapping_basic_relations_list();
+
+	
+	$form = array();
+	
+	
+	$form['datamodellist2'] = array (
+					'#title' => t('Choose a datamodel to map or insert a new one'),
+					'#type' => 'select',
+					'#options' => $datamodel_list,
+					'#default_value' => 'default',
+					
+				);
+	
+	
+	
+	$form['datamodel_fieldset2'] = array(
+		 '#type' => 'fieldset',
+	 	 '#title' => t('datamodel 2'),
+	 	 '#prefix' => '<div id="datamodel-fieldset2">',
+	 	 '#suffix' => '</div>',
+	 	 );	  	 	 
+		 
+			
+		  
+			
+			 $form['datamodel_fieldset2']['datamodel2'] = array (
+		  	  		'#title' => t('Name of the second datamodel'),                                     
+					'#type' => 'textfield',
+					'#size' => '50',
+					'#states' => array(
+						'visible' => array(
+						':input[name="datamodellist2"]' => array('value' => '0'),
+							),
+						),
+					);
+			 
+			   $form['datamodel_fieldset2']['URI2'] = array (
+							'#title' => t('URI'),
+							'#type' => 'textfield',
+							'#size' => '50',
+							'#states' => array(
+								'visible' => array(
+								':input[name="datamodellist2"]' => array('value' => '0'),
+									),
+								),
+							);
+	   
+	   $form['#attached']['css'] = array(
+		  	  drupal_get_path('module', 'CPSVAPmapping') . '/CPSVAPmapping.css',
+		);
+	   
+	   $form['#tree'] = TRUE;
+	   $form['relations_fieldset'] = array(
+	 	 '#type' => 'fieldset',
+	 	 '#title' => t('CPSVAPmapping relations'),
+	 	 '#prefix' => '<div id="relations-fieldset-wrapper">',
+	 	 '#suffix' => '</div>',
+	 	 );	
+	 
+		  $form['relations_fieldset']['labels']['core_class_label'] = array (
+		  	  		'#markup' => '<h1>Core Class</h1>',
+					);
+		  
+		  $form['relations_fieldset']['labels']['core_property_label'] = array (
+					'#markup' => '<h1>Core Property</h1>',
+					);
+		  
+		  $form['relations_fieldset']['labels']['relation_label'] = array (
+					'#markup' => '<h1>Relation</h1>',
+					);
+		  
+		  $form['relations_fieldset']['labels']['mapped_class_label'] = array (
+					'#markup' => '<h1>Mapped Class</h1>',
+					);
+		  
+		  $form['relations_fieldset']['labels']['mapped_property_label'] = array (
+					'#markup' => '<h1>Mapped Property</h1>',
+					);
+		  
+		  $form['relations_fieldset']['labels']['mapped_property_label'] = array (
+					'#markup' => '<h1>Mapped Property</h1>',
+					);
+		  
+		  $form['relations_fieldset']['labels']['syntax_CPSVAPmapping_label'] = array (
+					'#markup' => '<h1>Syntax Mapping</h1>',
+					);
+	
+		  if (empty($form_state['num_relations'])) {
+		  	  $form_state['num_relations'] =2;
+		  }
+		  
+		  for ($i = 0; $i < $form_state['num_relations']; $i++) {
+
+		  	  $chosen_class = CPSVAPmapping_get_class_chosen();
+		  	  $properties = CPSVAPmapping_get_properties_dropdown_options($selected);
+		  	  $selected = isset($form_state['values']['relations_fieldset'][$i]['core_class']) ? $form_state['values']['relations_fieldset'][$i]['core_class'] : key($chosen_class);
+
+				$form['relations_fieldset'][$i]['core_class'] = array (
+					'#type' => 'select',
+					'#options' => $chosen_class,
+					'#default_value' => $selected,
+					'#ajax' => array(
+						'callback' => 'CPSVAPmapping_dependent_dropdown_callback',
+						'wrapper' => 'relations-fieldset-wrapper',
+						),
+					);
+				
+				$form['relations_fieldset'][$i]['core_property'] = array (
+					'#type' => 'select',
+					'#prefix' => '<div id="dropdown-properties-replace">',
+					'#suffix' => '</div>',
+					'#options' => $properties,
+					'#default_value' => isset($form_state['values']['relations_fieldset'][$i]['core_property']) ? $form_state['values']['relations_fieldset'][$i]['core_property'] : '',
+					);
+	
+  
+				$form['relations_fieldset'][$i]['relation'] = array (
+					'#type' => 'select',
+					'#options' => $dropdown_array,
+					
+					);
+				
+				$form['relations_fieldset'][$i]['mapped_class'] = array (
+					'#type' => 'textfield',
+					'#size' => '10',
+					
+					);
+				
+				$form['relations_fieldset'][$i]['mapped_property'] = array (
+					'#type' => 'textfield',
+					'#size' => '10',
+					);
+				
+				$form['relations_fieldset'][$i]['syntax_mapping'] = array (
+					'#type' => 'checkbox',				
+					);				
+			}
+			
+			$form['add_relation'] = array(
+				'#type' => 'submit',
+				'#value' => t('add relation'),
+				'#submit' => array('CPSVAPmapping_add_one'),
+				'#limit_validation_errors' => array(),
+				'#ajax' => array(
+					'callback' => 'CPSVAPmapping_add_more_callback',
+					'wrapper' => 'relations-fieldset-wrapper',
+					),
+				);
+				  	  	
+  	  	  	$form['add_5_relations'] = array(
+  	  	  		'#type' => 'submit',
+  	  	  		'#value' => ('+5 relations'),
+  	  	  		'#submit' => array('CPSVAPmapping_add_five'),
+  	  	  		'#limit_validation_errors' => array(),
+  	  	  		'#ajax' => array(
+					'callback' => 'CPSVAPmapping_add_more_callback',
+					'wrapper' => 'relations-fieldset-wrapper',
+					),
+				);
+			
+			$form['remove_relation'] = array(
+				'#type' => 'submit',
+				'#value' => ('remove relation'),
+				'#submit' => array('CPSVAPmapping_remove_one'),
+				'#limit_validation_errors' => array(),
+				'#ajax' => array(
+					'callback' => 'CPSVAPmapping_add_more_callback',
+					'wrapper' => 'relations-fieldset-wrapper',
+					),
+				);
+			
+			$form['remove_five_relations'] = array(
+				'#type' => 'submit',
+				'#value' => ('-5 relations'),
+				'#submit' => array('CPSVAPmapping_remove_five'),
+				'#limit_validation_errors' => array(),
+				'#ajax' => array(
+					'callback' => 'CPSVAPmapping_add_more_callback',
+					'wrapper' => 'relations-fieldset-wrapper',
+					),
+				);
+  	  	  	
+		   $form['submit'] = array(
+			 '#type' => 'submit',
+			 '#value' => t('Submit'),			
+			
+			 );
+		   
+	return $form;
+	
+}
+
+function CPSVAPmapping_add_one($form, &$form_state) {
+	$form_state['num_relations']++;
+	$form_state['rebuild'] = TRUE;
+	
+}
+
+function CPSVAPmapping_add_five($form,&$form_state) {
+	$form_state['num_relations'] += 5;
+	$form_state['rebuild'] = TRUE;
+}
+
+	
+function CPSVAPmapping_remove_one($form, &$form_state) {
+	if($form_state['num_relations'] > 1){
+		$form_state['num_relations']--;
+		$form_state['rebuild'] = TRUE;
+	}
+		 
+}
+
+function CPSVAPmapping_remove_five($form, &$form_state) {
+	if($form_state['num_relations'] > 5){
+		$form_state['num_relations']-=5;
+		$form_state['rebuild'] = TRUE;
+	}
+}
+	
+function CPSVAPmapping_add_more_callback($form, $form_state) {
+
+  return $form['relations_fieldset'];
+}	
+
+function CPSVAPmapping_basic_validate($form, &$form_state){
+	$foo = FALSE;
+ 
+ 
+  $option2 = $form_state['complete form']['datamodellist2']['#options'][$form_state['values']['datamodellist2']];
+	
+	
+  
+  if($option2== "add new"){
+  	  
+  	  if(empty(trim($form_state['values']['datamodel_fieldset2']['datamodel2']))){
+  	  	  form_set_error('postal', t('datamodel 2 name is required.'));
+ 	 	 $foo= TRUE;
+ 	  }
+ 	  
+ 	   if(empty(trim($form_state['values']['datamodel_fieldset2']['URI2']))){
+  	  	  form_set_error('postal', t('datamodel uri is required.'));
+ 	 	 $foo= TRUE;
+ 	  }
+  }
+
+	for($i = 0; $i < $form_state['num_relations']; $i++){
+ 	 if(empty(trim($form_state['values']['relations_fieldset'][$i]['core_class']))) {
+ 	 	 form_set_error('postal', t('The Core class is required.'));
+ 	 	 $foo= TRUE;
+ 	}
+ 	
+ 	if(empty(trim($form_state['values']['relations_fieldset'][$i]['core_property']))) {
+ 	 	 form_set_error('postal', t('The Core property is required.'));
+ 	 	 $foo= TRUE;
+ 	}
+ 	
+ 	if(empty(trim($form_state['values']['relations_fieldset'][$i]['relation']))) {
+ 	 	 form_set_error('postal', t('The relation is required.'));
+ 	 	 $foo= TRUE;
+ 	}
+ 	
+ 	if(empty(trim($form_state['values']['relations_fieldset'][$i]['mapped_class']))) {
+ 	 	 form_set_error('postal', t('The mapped class is required.'));
+ 	 	 $foo= TRUE;
+ 	}
+ 	
+ 	if(empty(trim($form_state['values']['relations_fieldset'][$i]['mapped_property']))) {
+ 	 	 form_set_error('postal', t('The mapped property is required.'));
+ 	 	 $foo= TRUE;
+ 	
+  }
+  	}
+    
+  	 
+  if($foo==TRUE){
+  	 return;
+  }
+}
+
+function CPSVAPmapping_basic_submit($form, &$form_state) {
+	
+	
+	
+	$option2 = $form_state['complete form']['datamodellist2']['#options'][$form_state['values']['datamodellist2']];
+		
+	if($option2== "add new") {
+		$choice2=$form_state['values']['datamodel_fieldset2']['datamodel2'];
+	}
+	else {
+		$choice2=$option2;
+	}
+	
+	
+ for($i = 0; $i < $form_state['num_relations']; $i++){
+ 	 if(!empty($form['relations_fieldset'][$i]['core_class'])) {
+ 	 	 
+ 	 	 
+	db_insert('relations')
+    ->fields(array(
+    	
+      'did1' => 'CPSV-AP',
+      'did2' => $choice2,
+      'coreclass' =>$form_state['complete form']['relations_fieldset'][$i]['relation']['#options'][$form_state['values']['relations_fieldset'][$i]['core_class']],
+      'coreprop' => $form_state['complete form']['relations_fieldset'][$i]['relation']['#options'][$form_state['values']['relations_fieldset'][$i]['core_property']],
+      'relation' => $form_state['complete form']['relations_fieldset'][$i]['relation']['#options'][$form_state['values']['relations_fieldset'][$i]['relation']],
+      'mappedclass' =>$form_state['values']['relations_fieldset'][$i]['mapped_class'],
+      'mappedprop' =>  $form_state['values']['relations_fieldset'][$i]['mapped_property'],
+      'synmap' =>$form_state['values']['relations_fieldset'][$i]['syntax_mapping'],
+      ))->execute();
+    }
+    else {
+    	drupal_set_message('CPSVAPmapping relations are not filled in correctly');
+    }
+ }
+    
+   
+    
+    if($option2 =='add new') {
+    	db_insert('datamodels')
+    	->fields(array(
+    		'name' =>$form_state['values']['datamodel_fieldset2']['datamodel2'],
+    		'uri' =>$form_state['values']['datamodel_fieldset2']['URI2'],
+    	))->execute();
+    }
+       
+ 	drupal_set_message("Form has been submitted...hopefully");	
+ 
+}
+
+function CPSVAPmapping_basic_populate_list(){
+	$databaselist= db_query('SELECT mid,name FROM datamodels') ;
+
+	$options= array('0' => 'add new');
+   	 	foreach ($databaselist as $item) {
+		  	$key = $item->mid;
+		  	$value = $item->name;
+		  	$options[$key] = $value;
+		  }
+    return $options;
+}
+		  
+function CPSVAPmapping_basic_relations_list() {
+	$voc_name = 'Skos_mappingRelation';
+	$myvoc = taxonomy_vocabulary_machine_name_load($voc_name);
+		  
+	$dropdown_source = taxonomy_get_tree($myvoc->vid);
+	
+	$dropdown_list = array('0' => '---none---');
+		  
+		  foreach ($dropdown_source as $item) {
+		  	  $key = $item->tid;
+		  	  $value = $item->name;
+		  	  $dropdown_list[$key] = $value;
+		  }
+		  
+	return $dropdown_list;
+}
+
+function CPSVAPmapping_basic_classes_list(){
+	$classes_name = 'Classes';
+	$myclasses = taxonomy_vocabulary_machine_name_load($classes_name);
+		  
+	$classes_source = taxonomy_get_tree($myclasses->vid);
+	
+	$classes_list = array('0' => '---none---');
+		  
+		  foreach ($classes_source as $item) {
+		  	  $key = $item->tid;
+		  	  $value = $item->name;
+		  	  $classes_list[$key] = $value;
+		  }              
+		  
+	return $classes_list;
+}
+
+function CPSVAPmapping_basic_properties_list($vocabulary){
+
+	
+	$classes = taxonomy_get_tree($vocabulary);
+
+  foreach ($classes as $data) {
+    $output[$data->tid] = $data->name;
+  }
+  
+  return $output;
+}
+
+
+					
+				
+function CPSVAPmapping_dependent_dropdown_callback($form, $form_state) {
+  
+	
+  return $form['relations_fieldset'] ;
+  
+}
+
+
+function CPSVAPmapping_get_class_chosen() {
+  // drupal_map_assoc() just makes an array('String' => 'String'...).
+  return drupal_map_assoc(
+    array(
+      t('Public Service'),
+      t('Business Event'),
+      t('Input'),
+      t('Agent'),
+    )
+  );
+ }
+
+function CPSVAPmapping_get_properties_dropdown_options($key = '') {
+  $options = array(
+    t('Public Service') => drupal_map_assoc(
+      array(
+        t('Name'),
+        t('Description'),
+        t('Identifier'),
+        t('Keyword'),
+        t('Language'),
+        t('Processing Time'),
+        t('Sector'),
+        t('Type'),
+      )
+    ),
+    t('Business Event') => drupal_map_assoc(
+      array(
+        t('Name'),
+        t('Identifier'),
+        t('Description'),
+        t('Language'),
+        t('Type'),
+        t('Processing Time'),
+      )
+    ),
+    t('Input') => drupal_map_assoc(
+      array(
+        t('Name'),
+        t('Identifier'),
+        t('Description'),
+        t('Related Documentation'),
+        t('Type'),
+      )
+    ),
+    t('Agent') => drupal_map_assoc(
+      array(
+        t('Name'),
+        t('Identifier'),
+        t('Type'),
+      )
+    ),
+  );
+  if (isset($options[$key])) {
+    return $options[$key];
+  }
+  else {
+    return array();
+  }
+}
+	

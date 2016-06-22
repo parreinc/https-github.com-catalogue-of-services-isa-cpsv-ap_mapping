@@ -1,0 +1,56 @@
+
+
+
+.form-item.form-type-select.form-item-datamodellist2 {
+	float: left;
+	width:440px;
+	text-align: left;
+	
+}
+
+
+#datamodel-fieldset1 .form-wrapper{
+	width:420px;
+	float:left;
+}
+
+
+#datamodel-fieldset2 .form-wrapper{
+	width: 900px;
+	float:left;
+}
+
+
+#relations-fieldset-wrapper .form-wrapper h1{
+	float: left;
+	width: 110px;
+	padding: 10px 10px 0px 10px;
+	font-size: 15px;
+	font-weight: bold;
+	text-align: center;
+	margin: 10px 10px 0px 10px; 
+}
+#relations-fieldset-wrapper .form-wrapper .form-item.form-type-textfield{ 
+	float:left;
+	width : 110px;
+    text-align: center;
+	padding: 10px 10px 10px 10px;
+	margin: 10px 10px 0px 10px; 
+}
+
+#relations-fieldset-wrapper .form-wrapper .form-item.form-type-select{ 
+	float:left;
+	width : 110px;
+    text-align: center;
+	padding: 10px 10px 10px 10px;
+	margin: 10px 10px 0px 10px; 
+}
+
+#relations-fieldset-wrapper .form-wrapper .form-item.form-type-checkbox{ 
+	float:left;
+	width : 110px;
+    text-align: center;
+	padding: 10px 10px 25px 10px;
+	margin: 10px 10px 0px 10px; 
+}
+
