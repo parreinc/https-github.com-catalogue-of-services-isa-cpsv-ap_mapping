@@ -139,7 +139,7 @@ function mapping_basic($form, &$form_state) {
 					);
 	
 		  if (empty($form_state['num_relations'])) {
-		  	  $form_state['num_relations'] =2;
+		  	  $form_state['num_relations'] =1;
 		  }
 		  
 		  for ($i = 0; $i < $form_state['num_relations']; $i++) {
@@ -224,7 +224,8 @@ function mapping_basic($form, &$form_state) {
 			 '#value' => t('Submit'),			
 			
 			 );
-		   
+		
+	
 	return $form;
 	
 }
@@ -385,9 +386,22 @@ function mapping_basic_submit($form, &$form_state) {
     		'uri' =>$form_state['values']['wrapper_datamodels']['datamodel_fieldset2']['URI2'],
     	))->execute();
     }
-       
+    
+    
+   
+    
+if(easyrdf()){
+ 		$gs = new EasyRdf_Sparql_Client('http://localhost:8890/sparql');
+ 		$graph1 = new EasyRdf_Graph();
+ 		$graph1->add('http://example.com/test', 'rdfs:label', $option1);
+ 		$graph1->add('http://example.com/test', 'dc:date', time());
+ 		$gs->insert($graph1, 'http://cpsv-ap_mapping.eu');
+ 		}
+ 	
+     drupal_set_message('' + $option1);
  	drupal_set_message("Form has been submitted...hopefully");	
- 
+ 	
+ 	
 }
 
 function mapping_basic_populate_list(){
