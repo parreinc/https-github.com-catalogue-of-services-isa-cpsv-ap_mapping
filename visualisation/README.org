@@ -1,0 +1,482 @@
+#+TITLE: Core Vocabulary Directory
+
+* Introduction
+This is based on the original code which was taken from
+[https://github.com/SEMICeu/mdr].
+
+The assumption used is that a Ubuntu/Debian GNU/Linux system is being
+used for development and is the intended deployment target.
+
+** Downloading the source code
+The source code is available at [[https://github.com/tenforce/CoreVocabularyDirectory.git][GitHub]] and is based on a code from a
+previous project. It can be checked out using the command:
+
+#+BEGIN_SRC bash
+git clone https://github.com/tenforce/CoreVocabularyDirectory.git
+#+END_SRC
+
+** Source Code Structure
+The repository has several sub-directories:
+
+- system :: containing all the scripts/xslt/vsp and html/css/js
+            components (The structure of these files follows the
+            original project structure).
+- excelfiles :: containing all the base data files to be converted to
+            TTL.  These will also be made available on the
+            production system in the public_data directory.
+- virtuoso-setup :: which contains the SQL and initialisation files for
+            configuring virtuoso-opensource 6.1.
+
+** Development Notes
+- System Access Requirements ::
+  This is mostly installation work, for which you will required 'root'
+  access on the linux machines.
+- Docker Usage ::
+  A Dockerfile is used to allow the production system to be
+  mimicked on the development system. 
+- Vagrant Environment ::
+  This is used to mimic the production environment, but on a development
+  system.
+
+* Vagrant Development Environment
+To ease in the setting up of a suitable development environent, a
+Vagrant based appraoch is used. This will recreate a complete Debian
+Virtual Machine with all the tools installed which are necessary to
+rebuild the CoreVocabularyDirectory, to test it and to install it.
+
+The following are required to be installed on the base system:
+
+- [[https://www.vagrantup.com/][Vagrant]]
+- [[https://www.virtualbox.org/][Virtual Box]] (Not the 4.3.26 version as there are guest addition
+  problems)
+
+The following should be all that is required (bash commands have been
+given which have been tested with cygwin).
+
+#+BEGIN_SRC
+cd <directory where source was placed>
+vagrant up
+vagrant halt
+vagrant up
+#+END_SRC
+
+Note(s)
+- 1 :: the restart is deliberate to make sure that the desktop
+       interface is configured properly.
+- 2 :: wait for the system to completely restart (and mount of the
+       files is complete - empty /vagrant directory means mount is 
+       not correct).
+- 3 ::  dos2unix is also installed. This is for in the case there are
+        line endings which are incorrect. Once in /vagrant at the
+        command line the previously described commands should allow
+        building and packaging of the system.
+
+Following these steps, the actions listed here will be required:
+- login to the system (Access Account)
+- Initialise the build system (Stage 0),
+- Create the docker image (Stage 1),
+- Run the docker image (Stage 3),
+- Using a browser, test that the service is available (Stage 3).
+
+** Access account 
+
+Vagrant will create a system account with a well known
+userid/password:
+
+- userid:: vagrant
+- password:: vagrant
+
+The files required can be found in */vagrant* once you have logged in
+(this is a shared directory with the host environment).
+
+** Development system requirements
+These will be (pre)installed by the vagrant/bootstrap.sh file if the
+Vagrant approach is used. The bootstrap,sh file can be executed
+directoy if a suitable (clean) debian system (wheezy) is available.
+
+- Docker ::
+           This is used to create a container mimicking the final
+           installation system. It is best to install the latest
+           version of docker from [[http://docs.docker.com/][http://docs.docker.com/]].
+- Python3 ::
+           The default installed version is 2.7.6, but the scripts
+            require the python3 version. The scripts are used when
+            transforming the input datafiles into the TTL/RDF format
+            suitable for uploading to the virtuoso quad-store (th
+- Make ::  This is used to group together the compilation/build steps
+           when developing.
+- Git ::   Source control system, used to control updates.
+- [[https://www.gnu.org/software/autoconf/][Autoconf]] :: Build/Compilation control system, used to fill in the
+              command names, etc. in the Makefile.in (before writing
+              to Makefile). This is used to make sure the require
+              tools are present on the system.
+- Bash ::  Shell script which has been used (default system version).
+- [[Http://Www.Gnu.Org/Software/Emacs/][Emacs]] :: At present [[http://orgmode.org/][org-mode]] is used to execute the queries on the 
+           database once it has been created (dataquery-isPartOf.org).
+
+Any extra's are found in the bootstrap.sh file (and extensions should
+be placed there).
+
+** Development Environment Network Configuration
+For development, using the vagrant approach, the Dockerfile can be
+used to mimic the eventual production system. To test the docker
+service, a local system override of the mapping.semic.eu machine
+(*/etc/hosts*)
+
+#+BEGIN_SRC bash
+127.0.0.1             mapping.semic.eu
+#+END_SRC
+
+This will mean accesses to http://mapping.semic.eu/vdm will go to the
+localhost, rather than the target machine[fn:1].
+
+This ip/host mapping is already made in the development environment
+(see following section).
+* Semic Development and Deployment
+** General Description
+The developed approach has the following basic stages:
+- Development Setup - Stage 0 ::
+     This is normally a stage which is done once, when the development
+     first starts.
+
+- Compilation - Stage 1 ::
+     This stage comprises the transformation of the excel files into
+     the TTL/RDF form (and testing of the basic interface).
+     
+- Compilation - Stage 2 :: 
+     Once the database is available, the JSON files
+     for the visualisation of the results can be generated.
+
+     The first time, this stage can be skipped since pre-recovered 
+     results are in the repository.
+
+     This is circular (or multi phased process), the development
+     installation is used to generate the json files for the
+     visualisation on the production system (the production system views
+     are essientially static).
+
+- Testing - Stage 3 ::
+     The Vagrant machine will mimic the deployment system, so 
+     running the docker file and then using the browser (iceweasel)
+     will accesses the localhost version.
+
+- Display/Presentation/Publication - Stage 4 :: 
+     which concerns the presentation of the data to the user in a
+     standardised form. This stage follows from the first stage.
+     
+If any source data is changed (i.e. the excel files) then the steps from Stage 1 have to be redone.
+
+** Development Setup - Stage 0
+This stage is *normally* only done once, when starting the development
+or when some of the main files have been updated (i.e. typically
+because of a new global variable or because one of the *.in* files 
+has been updated).
+
+All the files to be used in the development are located in the */vagrant* 
+directory, so before doing anything:
+
+#+BEGIN_SRC bash
+cd /vagrant
+#+END_SRC
+
+*** Initialising the Build system
+For this goto the /vagrant directory and execute the following command
+lines (when using the Vagrant created VM, there should be no errors).
+
+#+BEGIN_SRC bash
+autoconf
+./configure 
+#+END_SRC
+
+[[https://www.gnu.org/software/autoconf/][Autoconf]] will generate from the configure.ac file and configure
+script.  The configure script, when executed will check that the
+needed tools have been installed and are in the PATH.
+
+Note: Many of the top level files are converted/generated by the
+confugure script (typically anything with an /*.in/ filename). So
+changes to some of the files, will need a rerunning of the above
+commands.
+** Compilation - Stage 1
+This stage is the compilation and building of the docker image.  In
+the home directory type (of the git clone):
+
+#+BEGIN_SRC bash
+make image
+#+END_SRC
+
+The *make image* will build the image from all the necessary
+components (excel files, etc).  Following this stage, it should be
+possible to test the access to the service (see Testing - Stage 3).
+
+Note: in case there is a new version of the source files (i.e. the Excel documents) with a different name then the scripts (i.e. Makefile) have to be adapted.
+
+** Compilation - Stage 2
+*** Creating the visualisation JSON files 
+There are two visualisation files which have to be created before
+deploying the final system. These are:
+
+- cvflare.json ::
+                 the core vocabularies mapping tree data
+- flare.json :: 
+                 the dcat-ap to ODS mapping tree.
+
+In both cases the following steps are required:
+
+1. Start the docker image on the development machine (make run)
+2. In a separate terminal run the command *make rebuild-links* which will
+   call python2.7 and will regenerate the all.links file.
+3. Stop the development machine docker image (C-c will kill it)
+4. Convert the query results files to the JSON format using the *make
+   image* command which will take the produced *link* files and using
+   a script convert them into the .JSON description used in the
+   visualisations (as well as start the docker image). The
+   visualisations are based on the [[http://d3js.org/][d3.js]] javascript facilities for
+   data driven documents.
+
+*** Rebuilding the image with updated JSON files
+The updated JSON file will now be available when the docker image is
+restarted using:
+
+#+BEGIN_SRC bash
+make image run
+#+END_SRC
+
+** Testing - Stage 3
+*** Run the docker image
+Virtuoso is wrapped up in a docker image (so that it is isolated from
+the base operating system). Once the image has been correctly built,
+then it will be possible to run the image and test access to the 
+website via the browser.
+
+#+BEGIN_SRC bash
+make run
+#+END_SRC
+
+*** Testing the created file and service view
+
+The easiest way to test the created view is to open a (iceweasal)
+browser at:
+
+   http://mapping.semic.eu/
+
+which will have been aliased to the localhost (in the Vagrant machine,
+See the section on Network configuration).  Simple browsing will then
+test if the files have been created correctly.
+
+The visualisations should also be checked that the respective pages
+are accessible:
+
+- [[http://vocabs.tenforce.com/vdm/visualisation/cvtree.html][Core vocabularies Tree]]
+- [[http://vocabs.tenforce.com/vdm/visualisation/tree.html][DCAT-AP to ODS Mapping Tree view]]
+
+If these files and the other links are working correctly the created
+files can then be moved to the remote system. In addition to the /vdm/
+files, there should also be access to the virtuoso conductor
+application:
+
+- [[http://mapping.semic.eu/conductor][Virtuoso Conductor Access Point]]
+
+** Deployment on Production - Stage 4
+*** Packaging the files to be installed
+
+Note: The production or target system should be backed-up before
+moving the new version of the files across to the system. To create
+the structure of the files to be copied across, use the following
+command.
+
+#+BEGIN_SRC bash
+make vdm.tgz
+scp vdm.tgz root@<ip-of-target-system>:
+#+END_SRC
+
+The *make vdm.tgz* command will create a directory called *vdm*
+which will contain a copy of all the files to be copied and installed
+on the target system. The *scp* will copy the files onto the remote
+system (as root).
+
+*** Updating the Production System
+On the production or target system (*ssh* would do) the following is
+required:
+
+- switch off/uninstall the apache2 and tomcat7 services 
+  (virtuoso will be on port 80)
+  - Note :: Other configuration will be needed if those services are needed.
+- Unpack the vdm.tgz file in the /var/lib/<virtuoso-opensource>/vsp
+  directory
+- Restart the virtuoso-opensource service.
+
+Note: This assumes that virtuoso-opensource has been configured as 
+described in the later section.
+
+* System Configuration and Operation
+When changing configuration or scripts, rebuilding the docker image and 
+running the new version. New versions of database files, etc. will installed
+and made available when using the browser. Other specific changes are outlined
+below.
+** Virtuoso Setup
+The semic system will run as a virtuoso based set of web-pages. For
+further information on virtuoso, the documentation of virtuoso
+opensource should be consulted. The virtuoso service will have the
+following configuration, changes to the production system structure
+should be duplicated here for development testing. The following are
+the current setup instructions, which are used by the current
+dockerfile.
+
+Note: the vagrant and docker usage will use these settings (the descriptions
+here are provided for documentation purposes).
+*** Setup of the virtuoso redirects
+There are several URL mappings which are required for the viewing of
+the data files to be successful. These are:
+
+| /vdm/id/(.*)                              | /vdm/doc/$s1                                       |
+| /vdm/doc/([^/.]*)(?:/([^/.]*))?(?:.(.*))? | /vdm/description.vsp?namespace=$U1&type=$U2&id=$U3 |
+| /vdm/about/([^/]*)/(.*)                   | /vdm/description.vsp?format=$U1&uri=$s2            |
+| /vdm/search(.*)                           | /vdm/search.vsp$s1                                 |
+| /                                         | /vdm/                                              |
+
+The file vhost_export_vspx.sql contains these definitions and doing
+the following will load this file into virtuoso (using isql-vt[fn:3])
+
+#+BEGIN_SRC bash
+isql < vhost_export_vspx.sql
+#+END_SRC
+
+These should then be visible in the virtuoso conductor (XXX). The
+vhost_export_vspx.sql file will also create a redirect from / to /vdm
+so that access to http://mapping.semic.eu will be point to the root of
+the system. It will need to be changed for a domain name other than
+mapping.semic.eu.
+
+*** Update the port number setting
+
+#+BEGIN_SRC bash
+ServerPort                  = 80
+#+END_SRC
+
+The virtuoso.ini file can be moved to the correct place
+(ie. /etc/virtuoso-opensource-6.1)
+
+#+BEGIN_SRC bash
+service virtuoso-opensource-6.1 restart
+#+END_SRC
+
+****** Note(s) on Virtuoso
+- 1 :: It is also recommended that the default virtuoso-opensource password
+       be changed once it has been installed on the target system.
+- 2 :: The description of virtuoso is for a specific setup, changes
+       to that setup will require changes to the creation/initialisation 
+       setup scripts (possibly re-exporting as neede).
+*** Files to load
+There are several data files[fn:4] which need to be uploaded into the
+virtuoso RDF store. The first are generated from the excel files:
+
+- data.ttl :: The core directory mapping directory data
+- dcatods.ttl :: The DCAT-AP ODS Mapping 
+- dcatapsdmx.ttl :: The DCAT-AP SDMX Mappings
+
+While the following are static files which are included to enhance the
+view of the excel file data:
+
+- skos.rdf :: SKOS definitions
+- adms-v0.2.rdf :: ADMS definiions
+- etc. ::
+
+*** Loading into Virtuoso
+Using the virtuoso conductor>quad store, upload the datafiles into the
+http://mapping.semic.eu/webDAV graph.
+*** Cleaning the database
+When rebuilding the database (upgrade, etc.) the following command
+can be used in the conductor/isql window[fn:2]. 
+
+#+BEGIN_SRC bash
+RDF_GLOBAL_RESET ();
+#+END_SRC
+
+This will reset the database, so it has to be rebuilt from scratch.
+
+** Changing the Setup (Domain Name, etc.)
+*** Changing the Domain Name
+
+Changing the domain name part of the build and installation should be
+easy enough, since the name is located in *configure.ac*
+(IPNAME). This is then used throughout the various files (filename
+extension typically *.in*).
+
+It will be necessary to completely rebuild the system for this change
+to take effect (and the configure.ac will have to be processed again 
+with *autoconf*). 
+
+The visualisation data will also have to be updated.
+
+* Monitoring the deployed service
+The easiest way to monitor the accessibility of the deployed service
+is to use one of the public monitoring tools (e.g. [[http://uptimerobot.com][Uptime Robot]]). This
+accepts a URL and pings that URL every hour or so, sending an email
+when the status changes (Up or Down).
+
+Google-Analytics is also activated in this code, the key is found in
+system/configure.sh (can be changed as needed - at present this one is
+a tenforce one).
+
+* Installation Requirements
+
+The vagrant description will (pre)install and setup all the required
+components in the VM, to allow development of the interface and sparql
+scripts.
+
+** Development build requirements
+The following will install most of the basic packages required.
+
+#+BEGIN_SRC bash
+apt-get install autoconf make tar git gzip
+#+END_SRC
+
+Any missed packages, etc. should then be trapped when initialising the
+build system (using the configure command).
+
+** Production system components required
+The following description assumes an "GNU/Linux Ubuntu 14.04 (trusty)"
+system is the target system and also the development system.
+*** runtime (target/production system)
+There is no development on the target system, but on the target 
+system the following are assumed to be present.
+- GNU/Linux ::
+  Ubuntu 14.04 LTS
+- Virtuoso-opensource ::
+  Version 6.1
+- SSH ::
+- [[Http://Www.Gnu.Org/Software/Emacs/][Emacs]] ::  The best editor on the planet.
+** General notes for both systems
+- Neither apache2 nor Tomcat should be running on the development or
+  production system - the virtuoso service is setup to run on port 80.
+- Only ports 80 (virtuoso) and 22 (ssh) should be open and the ssh
+  should be only open to a limited range of hosts (install a firewall
+  tool).
+
+** Virtuoso installation
+
+The dockerfile description contains almost the same instructions to
+build and run the compiled code as that for deployment (as well as
+setup the database). The basic setup instructions for the virtuoso
+instance (on an Ubuntu 14.04 LTS system):
+
+#+BEGIN_SRC bash
+apt-get update && apt-get upgrade -y
+apt-get install -y virtuoso-opensource-6.1 virtuoso-vad-conductor
+apt-get -y install rsyslog
+update.d virtuoso-opensource defaults
+#+END_SRC
+
+* Footnotes
+
+[fn:1] Suggestion would be to do development in a virtual machine, so
+testing of the target will be possible via the underlying OS.
+
+[fn:2] DBA password will be required.
+
+[fn:3] DBA password will be required for this.
+
+[fn:4] Note: since the ip address with likely be referencing the
+localhost, rather than the target machine. The target ip address will
+have to be used to access the conductor on the target machine
+(i.e. http://XXX.YY.ZZ.AA/conductor).
