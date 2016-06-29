@@ -3907,7 +3907,8 @@ function theme_submit($variables) {
  * @ingroup themeable
  */
 function theme_button($variables) {
-  $element = $variables['element'];
+ 
+	$element = $variables['element'];
   $element['#attributes']['type'] = 'submit';
   element_set_attributes($element, array('id', 'name', 'value'));
 

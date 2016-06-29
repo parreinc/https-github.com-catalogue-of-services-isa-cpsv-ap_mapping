@@ -336,7 +336,6 @@ function mapping_basic_submit($form, &$form_state) {
 	$select2 = $form_state['complete form']['datamodellist2']['#options'][$form_state['values']['datamodellist2']];
 	
 	
-	
 	if($select1== "add new") {
 		$datamodel1=$form_state['values']['wrapper_datamodels']['datamodel_fieldset1']['datamodel1'];
 		$datamodelURI1= $form_state['values']['wrapper_datamodels']['datamodel_fieldset1']['URI1'];
@@ -405,10 +404,12 @@ function mapping_basic_submit($form, &$form_state) {
     }
       
 if(easyrdf()){
- 		$gs = new EasyRdf_Sparql_Client('http://localhost:8890/sparql');
+		$endpoint= 'http://localhost:8890/sparql';
+ 		$gs = new EasyRdf_Sparql_Client($endpoint);
  		$graph1 = new EasyRdf_Graph('http://cpsv-ap_mapping.eu');
  		//datamodel, classes & properties
- 		$graph1->add($select1, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://cpsv-ap-mapping/datamodel');
+ 		$graph1->add($datamodelURI1, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://cpsv-ap-mapping/datamodel');
+ 		$graph1->add($datamodelURI2, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://cpsv-ap-mapping/datamodel');
  		$graph1->add($coreprop, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property');
  		$graph1->add($mappedprop, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property');
  		$graph1->add($coreclass, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://www.w3.org/2000/01/rdf-schema#Class');
@@ -416,7 +417,6 @@ if(easyrdf()){
  		
  		//ispartof
  		
-
  		$graph1->add($coreclass, 'http://purl.org/dc/terms/isPartOf', $datamodelURI1);
  		$graph1->add($mappedclass, 'http://purl.org/dc/terms/isPartOf', $datamodelURI2);
  		$graph1->add($coreprop, 'http://purl.org/dc/terms/isPartOf', $coreclass);
@@ -443,18 +443,24 @@ if(easyrdf()){
  		}
  	$gs->insert($graph1, 'http://cpsv-ap_mapping.eu');
  	
- 
-$result = $gs->query('select * where {?s ?o ?p}');
-    drupal_set_message($numFields);
+ 	$graphuri = new EasyRdf_Sparql_Client('http://localhost:8890/sparql?graph-uri=http://cpsv-ap_mapping.eu');
  	
+ 	$data = $graphuri->query(
+ 		'SELECT * WHERE {?s ?o ?p}'
+ 	);
  	
-}
- 	drupal_set_message("Form has been submitted...hopefully");	
+ 	$data2= $gs->listNamedGraphs();
  	
+ 	foreach($data2 as $row){
+ 		drupal_set_message($row);
+ 	}
+ 	drupal_set_message($data2);
  	
+	}
 }
 
 function mapping_basic_populate_list(){
+	
 	$databaselist= db_query('SELECT mid,name FROM datamodels') ;
 
 	$options= array('0' => 'add new');
@@ -463,6 +469,7 @@ function mapping_basic_populate_list(){
 		  	$value = $item->name;
 		  	$options[$key] = $value;
 		  }
+		  
     return $options;
 }
 		  

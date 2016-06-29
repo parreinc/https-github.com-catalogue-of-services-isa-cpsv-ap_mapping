@@ -40,6 +40,17 @@
 	text-align: center;
 	margin: 10px 10px 0px 10px; 
 }
+
+
+#relations-fieldset-wrapper .form-wrapper h2{
+	float: left;
+	width: 110px;
+	padding: 20px 10px 0px 10px;
+	font-size: 12px;
+	font-weight: bold;
+	text-align: left;
+	margin: 10px 10px 0px 10px; 
+}
 #relations-fieldset-wrapper .form-wrapper .form-item.form-type-textfield{ 
 	float:left;
 	width : 110px;
@@ -62,5 +73,15 @@
     text-align: center;
 	padding: 10px 10px 25px 10px;
 	margin: 10px 10px 0px 10px; 
+}
+
+#relations-fieldset-wrapper {
+	width:1080px;
+	float: left;
+}
+
+#relations-fieldset-wrapper {
+	width:1080px;
+	float: left;
 }
 
